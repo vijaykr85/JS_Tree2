@@ -1,0 +1,153 @@
+﻿<head>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.16/themes/default/style.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.16/jstree.min.js"></script>
+
+    <style>
+        h1 {
+            background-color: lightgreen;
+            color: brown;
+        }
+
+    </style>
+
+
+</head>
+
+
+<h1 class="text-center">
+
+    Js Tree Dynamic using DataBase
+
+</h1>
+
+
+<div class="row">
+    <div class="col">
+        <input type="button" id="create_newNode" value="Create Parent Node" />
+    </div>
+    <div class="col">
+        Search <input id="search" type="text" />
+    </div>
+</div>
+
+
+
+<div id="dynamic" class="border rounded-3 mt-5"></div>
+
+<script>
+
+    //initialize Js Tree
+    $('#dynamic').jstree({
+        "core": {
+            'data': {
+                'url': '/Home/GetData/',
+            },
+            "check_callback": true,
+        },
+        "plugins": [
+            "contextmenu",
+            "dnd",
+            "sort",
+            "state",
+            "unique",
+            "wholerow",
+        ]
+    })
+
+    //create parents node
+
+    $('#create_newNode').on('click', function () {
+        debugger;
+        var $tree = $('#dynamic').jstree(true);
+        var newNode = $tree.create_node(null, );
+        $tree.select_node(newNode);
+        $tree.trigger("create_node.jstree", { node: newNode });
+    });
+
+
+    //Add child node
+    $('#dynamic').on("create_node.jstree", function (e, dataNodes) {
+
+        $.ajax({
+            url: "/Home/AddData",
+            type: "POST",
+            data: dataNodes.node,
+        })
+    })
+
+    //search for a node
+    var to = false;
+    $('#search').keyup(function () {
+        if (to) {
+            clearTimeout(to);
+        }
+        to = setTimeout(function () {
+            var v = $('#search').val();
+            $('#dynamic').jstree().search(v);
+        }, 250);
+    });
+
+
+    //deleting A node
+    $('#dynamic').on("delete_node.jstree", function (e, dataNodes) {
+        var childs = dataNodes.node.children;
+        if (childs.length) {
+
+            alert(`You cannot delete ${dataNodes.node.text} record before deleting their child records!`)
+            $("#dynamic").jstree().refresh();
+        }
+        else {
+            $.ajax({
+                url: "/Home/DeleteData",
+                type: "POST",
+                data: dataNodes.node,
+            })
+        }
+    })
+
+    //Rename a node
+    $('#dynamic').on("rename_node.jstree", function (e, dataNodes) {
+        $.ajax({
+            url: "/Home/UpdateData",
+            type: "POST",
+            data: dataNodes.node,
+        })
+    })
+
+    //Move node
+    $('#dynamic').on("move_node.jstree", function (e, dataNodes) {
+        $.ajax({
+            url: "/Home/UpdateData",
+            type: "POST",
+            data: dataNodes.node,
+        })
+    })
+    //Copy node
+    $('#dynamic').on("copy_node.jstree", function (e, dataNodes) {
+
+        $.ajax({
+            url: "/Home/AddData",
+            type: "POST",
+            data: dataNodes.node,
+        })
+    })
+
+
+    //Sort data
+    function sortFunction(a, b) {
+        if (a.text === b.text) {
+            return 0;
+        }
+        else {
+            return (a.text < b.text) ? -1 : 1;
+        }
+    }
+
+
+</script>
+
+
+
+
